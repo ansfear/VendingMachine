@@ -37,6 +37,7 @@
             btnPayCash = new Button();
             btnPayCard = new Button();
             btnRefund = new Button();
+            btnOpenStaff = new Button();
             SuspendLayout();
             // 
             // btnSlot1
@@ -120,11 +121,22 @@
             btnRefund.Text = "Вернуть деньги";
             btnRefund.UseVisualStyleBackColor = true;
             // 
+            // btnOpenStaff
+            // 
+            btnOpenStaff.Location = new Point(397, 310);
+            btnOpenStaff.Name = "btnOpenStaff";
+            btnOpenStaff.Size = new Size(134, 23);
+            btnOpenStaff.TabIndex = 9;
+            btnOpenStaff.Text = "Для персонала";
+            btnOpenStaff.UseVisualStyleBackColor = true;
+            btnOpenStaff.Click += btnOpenStaff_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1083, 450);
+            Controls.Add(btnOpenStaff);
             Controls.Add(btnRefund);
             Controls.Add(btnPayCard);
             Controls.Add(btnPayCash);
@@ -152,5 +164,6 @@
         private Button btnPayCash;
         private Button btnPayCard;
         private Button btnRefund;
+        private Button btnOpenStaff;
     }
 }

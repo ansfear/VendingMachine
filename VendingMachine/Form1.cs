@@ -5,12 +5,13 @@ using System.Text.Json;
 using System.Windows.Forms;
 using VendingMachine.Data;
 using VendingMachine.Models;
+using System.IO;
 
 namespace VendingMachine
 {
     public partial class Form1 : Form
     {
-        private List<Product> _products;
+        private List<Product> _products = new List<Product>();
         private decimal _insertedAmount = 0;
         private int? _selectedSlot = null; // Выбранный лоток (пока не выбран)
         private Product _selectedProduct = null; // Выбранный товар
@@ -121,18 +122,23 @@ namespace VendingMachine
 
             if (_insertedAmount >= _selectedProduct.Price)
             {
-                // Выдаём товар
                 string productName = _selectedProduct.Name;
-                decimal change = _insertedAmount - _selectedProduct.Price;
+                decimal productPrice = _selectedProduct.Price;
+                decimal change = _insertedAmount - productPrice;
 
-                DispenseProduct(); // ← теперь без MessageBox
+                DispenseProduct(); 
 
-                MessageBox.Show($"✅ Товар '{productName}' выдан!\nСдача: {change:F0} руб.",
-                                "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"✅ Товар '{productName}' выдан!\nСдача: {change:F0} руб.", "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
+                // Сбрасываем состояние
                 _insertedAmount = 0;
                 _selectedProduct = null;
                 UpdateUI();
+
+                // Обновляем кассу — используем сохранённую цену
+                var cashBox = _dataService.LoadCashBox();
+                cashBox.Cash += productPrice;
+                _dataService.SaveCashBox(cashBox);
             }
             else
             {
@@ -164,6 +170,10 @@ namespace VendingMachine
             // Списываем деньги
             card.Balance -= _selectedProduct.Price;
             _dataService.SaveCardBalance(card);
+
+            var cashBox = _dataService.LoadCashBox();
+            cashBox.Electronic += _selectedProduct.Price;
+            _dataService.SaveCashBox(cashBox);
 
             // Выдаём товар (внутри DispenseProduct() будет обновлён UI и сброшен _selectedProduct)
             DispenseProduct();
@@ -232,6 +242,25 @@ namespace VendingMachine
         public class CardData
         {
             public decimal Balance { get; set; }
+        }
+
+        private void OpenStaffPanel()
+        {
+            var staffForm = new StaffPanelForm();
+            staffForm.ShowDialog();
+        }
+
+        private void btnOpenStaff_Click(object sender, EventArgs e)
+        {
+            var pin = Microsoft.VisualBasic.Interaction.InputBox("Введите ПИН-код:", "Доступ персонала", "");
+            if (pin == "12345")
+            {
+                OpenStaffPanel();
+            }
+            else
+            {
+                MessageBox.Show("Неверный ПИН!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }

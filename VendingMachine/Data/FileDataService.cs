@@ -10,6 +10,7 @@ namespace VendingMachine.Data
     {
         private const string ProductsFilePath = "products.json";
         private const string CardFilePath = "card.json";
+        private const string CashBoxFilePath = "cashbox.json";
 
         public List<Product> LoadProducts()
         {
@@ -56,6 +57,25 @@ namespace VendingMachine.Data
         {
             var json = JsonSerializer.Serialize(card, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(CardFilePath, json);
+        }
+
+        public CashBox LoadCashBox()
+        {
+            if (!File.Exists(CashBoxFilePath))
+            {
+                var defaultBox = new CashBox();
+                SaveCashBox(defaultBox);
+                return defaultBox;
+            }
+
+            var json = File.ReadAllText(CashBoxFilePath);
+            return JsonSerializer.Deserialize<CashBox>(json) ?? new CashBox();
+        }
+
+        public void SaveCashBox(CashBox box)
+        {
+            var json = JsonSerializer.Serialize(box, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(CashBoxFilePath, json);
         }
     }
 }
