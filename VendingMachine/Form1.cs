@@ -13,9 +13,9 @@ namespace VendingMachine
     {
         private List<Product> _products = new List<Product>();
         private decimal _insertedAmount = 0;
-        private int? _selectedSlot = null; // Выбранный лоток (пока не выбран)
         private Product _selectedProduct = null; // Выбранный товар
         private FileDataService _dataService;
+        private string _inputBuffer = "";
 
         public Form1()
         {
@@ -27,15 +27,24 @@ namespace VendingMachine
         {
             LoadProductsFromStorage();
             UpdateUI();
-            btnSlot1.Click += (s, e) => SelectProduct(1);
-            btnSlot2.Click += (s, e) => SelectProduct(2);
-            btnSlot3.Click += (s, e) => SelectProduct(3);
-            btnSlot4.Click += (s, e) => SelectProduct(4);
-            btnSlot5.Click += (s, e) => SelectProduct(5);
+            btnNum0.Click += btnNum_Click;
+            btnNum1.Click += btnNum_Click;
+            btnNum2.Click += btnNum_Click;
+            btnNum3.Click += btnNum_Click;
+            btnNum4.Click += btnNum_Click;
+            btnNum5.Click += btnNum_Click;
+            btnNum6.Click += btnNum_Click;
+            btnNum7.Click += btnNum_Click;
+            btnNum8.Click += btnNum_Click;
+            btnNum9.Click += btnNum_Click;
+
+            btnSelect.Click += btnSelect_Click;
+            btnClear.Click += btnClear_Click;
 
             btnPayCash.Click += PayCash_Click;
             btnPayCard.Click += PayCard_Click;
-            btnRefund.Click += Refund_Click;
+
+            ShowMessage("Выберите товар (1–5)");
         }
 
         private void LoadProductsFromStorage()
@@ -56,21 +65,21 @@ namespace VendingMachine
                 var button = GetButtonBySlot(slot);
                 if (button == null) continue;
 
-                button.Text = $"{slot}. {product.Name} — {product.Price} руб.";
+                button.Text = $"{slot}. {product.Name} \n {product.Price} руб.";
 
                 if (product.IsAvailable)
                 {
                     button.Enabled = true;
-                    button.BackColor = System.Drawing.Color.LightGreen;
+                    button.BackColor = Color.White;
+                    button.ForeColor = Color.Black;
                 }
                 else
                 {
                     button.Enabled = false;
-                    button.BackColor = System.Drawing.Color.LightCoral;
+                    button.BackColor = Color.FromArgb(255, 210, 210);
+                    button.ForeColor = Color.Gray;
                 }
             }
-
-            lblInserted.Text = $"Внесено: {_insertedAmount:F0} руб.";
         }
 
         private Button GetButtonBySlot(int slot)
@@ -86,64 +95,45 @@ namespace VendingMachine
             };
         }
 
-        private void SelectProduct(int slot)
-        {
-            var product = _products.Find(p => p.Slot == slot);
-            if (product == null)
-            {
-                MessageBox.Show("Товар не найден", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            if (!product.IsAvailable)
-            {
-                MessageBox.Show($"Товар '{product.Name}' закончился. Пожалуйста, выберите другой.", "Нет в наличии", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            _selectedProduct = product;
-            MessageBox.Show($"Выбран товар: {product.Name} — {product.Price} руб.", "Товар выбран", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
-
-
         private void PayCash_Click(object sender, EventArgs e)
         {
             if (_selectedProduct == null)
             {
-                MessageBox.Show("Сначала выберите товар!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ShowMessage("❗ Выберите товар");
                 return;
             }
 
-            var amount = PromptInput("Введите сумму (руб.):");
-            if (amount <= 0) return;
+            var cashForm = new CashPaymentForm(_selectedProduct);
+            cashForm.ShowDialog();
 
-            _insertedAmount += amount;
-            UpdateUI();
-
-            if (_insertedAmount >= _selectedProduct.Price)
+            if (cashForm.ShouldDispense)
             {
+                // Выдача товара
                 string productName = _selectedProduct.Name;
                 decimal productPrice = _selectedProduct.Price;
-                decimal change = _insertedAmount - productPrice;
+                decimal change = cashForm.InsertedAmount - productPrice;
 
-                DispenseProduct(); 
+                DispenseProduct();
 
-                MessageBox.Show($"✅ Товар '{productName}' выдан!\nСдача: {change:F0} руб.", "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                // Сбрасываем состояние
-                _insertedAmount = 0;
-                _selectedProduct = null;
-                UpdateUI();
-
-                // Обновляем кассу — используем сохранённую цену
+                // Обновляем кассу
                 var cashBox = _dataService.LoadCashBox();
                 cashBox.Cash += productPrice;
                 _dataService.SaveCashBox(cashBox);
+
+                // Показываем результат
+                ShowMessage($"✅ Товар выдан!\nСдача: {change:F0} руб.", autoReset: true);
+
+                _insertedAmount = 0;
+                _selectedProduct = null;
+                _inputBuffer = "";
             }
-            else
+            else if (cashForm.ShouldRefund)
             {
-                MessageBox.Show($"Недостаточно средств. Нужно ещё {_selectedProduct.Price - _insertedAmount:F0} руб.",
-                                "Недостаточно", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                // Возврат
+                _insertedAmount = cashForm.InsertedAmount;
+                ShowMessage($"↩ Возвращено: {_insertedAmount:F0} руб.");
+                _insertedAmount = 0;
+                _selectedProduct = null;
             }
         }
 
@@ -151,7 +141,7 @@ namespace VendingMachine
         {
             if (_selectedProduct == null)
             {
-                MessageBox.Show("Сначала выберите товар!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ShowMessage("❗ Выберите товар");
                 return;
             }
 
@@ -159,15 +149,12 @@ namespace VendingMachine
 
             if (card.Balance < _selectedProduct.Price)
             {
-                MessageBox.Show($"Недостаточно средств на карте.\nНужно: {_selectedProduct.Price:F0} руб.\nНа карте: {card.Balance:F0} руб.",
-                                "Ошибка оплаты", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowMessage("💳 Недостаточно средств на карте");
                 return;
             }
 
-            // Сохраняем имя товара, чтобы показать в сообщении
             string productName = _selectedProduct.Name;
 
-            // Списываем деньги
             card.Balance -= _selectedProduct.Price;
             _dataService.SaveCardBalance(card);
 
@@ -175,73 +162,23 @@ namespace VendingMachine
             cashBox.Electronic += _selectedProduct.Price;
             _dataService.SaveCashBox(cashBox);
 
-            // Выдаём товар (внутри DispenseProduct() будет обновлён UI и сброшен _selectedProduct)
             DispenseProduct();
 
-            // Уведомление — используем сохранённое имя
-            MessageBox.Show($"✅ Товар '{productName}' выдан!\nОплачено картой.",
-                            "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            ShowMessage("✅ Товар выдан!", autoReset: true);
+            _selectedProduct = null;
+            _inputBuffer = "";
 
-            // _selectedProduct уже null — не нужно снова сбрасывать
             UpdateUI();
-        }
-
-        private void Refund_Click(object sender, EventArgs e)
-        {
-            if (_insertedAmount > 0)
-            {
-                MessageBox.Show($"Возвращено {_insertedAmount:F0} руб.", "Возврат", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                _insertedAmount = 0;
-                _selectedProduct = null; // Сбрасываем выбор
-                UpdateUI();
-            }
-            else
-            {
-                MessageBox.Show("Нет внесённых средств для возврата.", "Возврат", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
         }
 
         private void DispenseProduct()
         {
             if (_selectedProduct == null) return;
 
-            // Уменьшаем количество
             _selectedProduct.Stock--;
-            _dataService.SaveProducts(_products); // Сохраняем изменения в файл
+            _dataService.SaveProducts(_products);
 
-            // Обновляем UI
             UpdateUI();
-        }
-
-        // Вспомогательный метод для ввода суммы
-        private decimal PromptInput(string message)
-        {
-            var input = Microsoft.VisualBasic.Interaction.InputBox(message, "Ввод", "0");
-            if (decimal.TryParse(input, out decimal value))
-                return value;
-            else
-                return 0;
-        }
-
-
-        private decimal GetCardBalance()
-        {
-            string json = File.ReadAllText("card.json");
-            var data = JsonSerializer.Deserialize<CardData>(json);
-            return data.Balance;
-        }
-
-        private void UpdateCardBalance(decimal newBalance)
-        {
-            var data = new CardData { Balance = newBalance };
-            string json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText("card.json", json);
-        }
-
-        // Вспомогательный класс для десериализации JSON
-        public class CardData
-        {
-            public decimal Balance { get; set; }
         }
 
         private void OpenStaffPanel()
@@ -261,6 +198,71 @@ namespace VendingMachine
             {
                 MessageBox.Show("Неверный ПИН!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void ShowMessage(string message, bool autoReset = false)
+        {
+            lblDisplay.Text = message;
+
+            if (autoReset)
+            {
+                var timer = new System.Windows.Forms.Timer();
+                timer.Interval = 2000;
+                timer.Tick += (s, e) =>
+                {
+                    lblDisplay.Text = "Выберите товар (1–5)";
+                    ((System.Windows.Forms.Timer)s).Stop();
+                };
+                timer.Start();
+            }
+        }
+
+        private void btnNum_Click(object sender, EventArgs e)
+        {
+            if (_selectedProduct != null) return; // если уже выбран — игнорируем
+
+            var digit = ((Button)sender).Text;
+            if (_inputBuffer.Length == 0 && digit != "0") // только одна цифра (1–5)
+            {
+                _inputBuffer = digit;
+                ShowMessage($"Ввод: {_inputBuffer}");
+            }
+        }
+
+        private void btnSelect_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(_inputBuffer))
+            {
+                ShowMessage("❗ Введите номер товара");
+                return;
+            }
+
+            if (int.TryParse(_inputBuffer, out int slot) && slot >= 1 && slot <= 5)
+            {
+                var product = _products.Find(p => p.Slot == slot);
+                if (product == null || !product.IsAvailable)
+                {
+                    ShowMessage($"❌ Товар {slot} недоступен");
+                    _inputBuffer = "";
+                    return;
+                }
+
+                _selectedProduct = product;
+                ShowMessage($"{product.Name}\nЦена: {product.Price:F0} руб.\nОплатите!");
+                _inputBuffer = ""; // сброс ввода
+            }
+            else
+            {
+                ShowMessage("❗ Неверный номер (1–5)");
+                _inputBuffer = "";
+            }
+        }
+
+        private void btnClear_Click(object sender, EventArgs e)
+        {
+            _inputBuffer = "";
+            _selectedProduct = null;
+            ShowMessage("Выберите товар (1–5)");
         }
     }
 }
