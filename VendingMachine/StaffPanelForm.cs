@@ -34,9 +34,9 @@ namespace VendingMachine
             var products = _dataService.LoadProducts();
             lblStock1.Text = $"Лоток 1: {products.FirstOrDefault(p => p.Slot == 1)?.Stock ?? 0} шт.";
             lblStock2.Text = $"Лоток 2: {products.FirstOrDefault(p => p.Slot == 2)?.Stock ?? 0} шт.";
-            lblStock3.Text = $"Лоток 3: {products.FirstOrDefault(p => p.Slot == 2)?.Stock ?? 0} шт.";
-            lblStock4.Text = $"Лоток 4: {products.FirstOrDefault(p => p.Slot == 2)?.Stock ?? 0} шт.";
-            lblStock5.Text = $"Лоток 5: {products.FirstOrDefault(p => p.Slot == 2)?.Stock ?? 0} шт.";
+            lblStock3.Text = $"Лоток 3: {products.FirstOrDefault(p => p.Slot == 3)?.Stock ?? 0} шт.";
+            lblStock4.Text = $"Лоток 4: {products.FirstOrDefault(p => p.Slot == 4)?.Stock ?? 0} шт.";
+            lblStock5.Text = $"Лоток 5: {products.FirstOrDefault(p => p.Slot == 5)?.Stock ?? 0} шт.";
         }
 
         private void btnWithdrawCash_Click(object sender, EventArgs e)
