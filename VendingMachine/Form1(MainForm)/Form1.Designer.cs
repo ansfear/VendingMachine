@@ -51,6 +51,7 @@
             btnClear = new Button();
             btnSelect = new Button();
             panel1 = new Panel();
+            btnRefresh = new Button();
             panel1.SuspendLayout();
             SuspendLayout();
             // 
@@ -267,12 +268,22 @@
             panel1.Size = new Size(376, 361);
             panel1.TabIndex = 11;
             // 
+            // btnRefresh
+            // 
+            btnRefresh.Location = new Point(154, 369);
+            btnRefresh.Name = "btnRefresh";
+            btnRefresh.Size = new Size(98, 39);
+            btnRefresh.TabIndex = 12;
+            btnRefresh.Text = "Обновить данные";
+            btnRefresh.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.ButtonHighlight;
             ClientSize = new Size(810, 438);
+            Controls.Add(btnRefresh);
             Controls.Add(panel1);
             Controls.Add(btnOpenStaff);
             Controls.Add(btnSlot5);
@@ -316,5 +327,6 @@
         private Button btnClear;
         private Button btnSelect;
         private Panel panel1;
+        private Button btnRefresh;
     }
 }

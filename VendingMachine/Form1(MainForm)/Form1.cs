@@ -44,6 +44,8 @@ namespace VendingMachine
             btnPayCash.Click += PayCash_Click;
             btnPayCard.Click += PayCard_Click;
 
+            btnRefresh.Click += btnRefresh_Click;
+
             ShowMessage("Выберите товар (1–5)");
         }
 
@@ -53,6 +55,13 @@ namespace VendingMachine
             Debug.WriteLine("Товары загружены:");
             foreach (var p in _products)
                 Debug.WriteLine($"  Лоток {p.Slot}: {p.Name}, {p.Price} руб., осталось {p.Stock}");
+        }
+
+        private void btnRefresh_Click(object sender, EventArgs e)
+        {
+            LoadProductsFromStorage();
+            UpdateUI();
+            ShowMessage("Данные обновлены");
         }
     }
 }
